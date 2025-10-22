@@ -4,6 +4,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
 
+  // Event delegation for delete buttons
+  activitiesList.addEventListener("click", async (event) => {
+    if (event.target.closest(".delete-btn")) {
+      const deleteBtn = event.target.closest(".delete-btn");
+      const activityName = deleteBtn.dataset.activity;
+      const email = deleteBtn.dataset.email;
+      
+      if (activityName && email) {
+        await unregisterParticipant(activityName, email);
+      }
+    }
+  });
+
+  // Helper function to escape HTML characters
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
   // Function to fetch activities from API
   async function fetchActivities() {
     try {
@@ -12,6 +32,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Clear loading message
       activitiesList.innerHTML = "";
+      // Clear select options (keep the default one)
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
@@ -24,8 +46,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const participantsList = details.participants.length > 0
           ? `<div class="participants-list">${details.participants.map(participant => 
               `<div class="participant-item">
-                 <span class="participant-email">${participant}</span>
-                 <button class="delete-btn" onclick="unregisterParticipant('${name}', '${participant}')" title="Remove participant">
+                 <span class="participant-email">${escapeHtml(participant)}</span>
+                 <button class="delete-btn" data-activity="${escapeHtml(name)}" data-email="${escapeHtml(participant)}" title="Remove participant">
                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                      <polyline points="3,6 5,6 21,6"></polyline>
                      <path d="m19,6v14a2,2 0,0 1,-2,2H7a2,2 0,0 1,-2,-2V6m3,0V4a2,2 0,0 1,2,-2h4a2,2 0,0 1,2,2v2"></path>
@@ -37,9 +59,9 @@ document.addEventListener("DOMContentLoaded", () => {
           : '<p class="no-participants">No participants yet</p>';
 
         activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
+          <h4>${escapeHtml(name)}</h4>
+          <p>${escapeHtml(details.description)}</p>
+          <p><strong>Schedule:</strong> ${escapeHtml(details.schedule)}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
           <div class="participants-section">
             <strong>Current Participants:</strong>
@@ -104,7 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Function to unregister a participant from an activity
-  window.unregisterParticipant = async function(activityName, email) {
+  async function unregisterParticipant(activityName, email) {
     try {
       const response = await fetch(
         `/activities/${encodeURIComponent(activityName)}/unregister?email=${encodeURIComponent(email)}`,
@@ -137,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
       messageDiv.classList.remove("hidden");
       console.error("Error unregistering:", error);
     }
-  };
+  }
 
   // Initialize app
   fetchActivities();
