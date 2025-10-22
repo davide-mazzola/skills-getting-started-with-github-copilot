@@ -4,6 +4,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
 
+  // SVG icon constants for the delete button (trash can icon)
+  const DELETE_ICON_CONFIG = {
+    // Top horizontal line of the trash can
+    TOP_LINE_POINTS: '3,6 5,6 21,6',
+    
+    // Main trash can body with lid and handle
+    // Represents: rectangular body with rounded corners, lid on top, and handle indent
+    TRASH_CAN_PATH: 'm19,6v14a2,2 0,0 1,-2,2H7a2,2 0,0 1,-2,-2V6m3,0V4a2,2 0,0 1,2,-2h4a2,2 0,0 1,2,2v2',
+    
+    // Left vertical line inside trash can (deletion indicator)
+    LEFT_DELETE_LINE: { x1: '10', y1: '11', x2: '10', y2: '17' },
+    
+    // Right vertical line inside trash can (deletion indicator)
+    RIGHT_DELETE_LINE: { x1: '14', y1: '11', x2: '14', y2: '17' }
+  };
+
   // Event delegation for delete buttons
   activitiesList.addEventListener("click", async (event) => {
     if (event.target.closest(".delete-btn")) {
@@ -27,27 +43,27 @@ document.addEventListener("DOMContentLoaded", () => {
     svg.setAttribute('stroke', 'currentColor');
     svg.setAttribute('stroke-width', '2');
     
-    // Create polyline element
+    // Create polyline element (top horizontal line of trash can)
     const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-    polyline.setAttribute('points', '3,6 5,6 21,6');
+    polyline.setAttribute('points', DELETE_ICON_CONFIG.TOP_LINE_POINTS);
     
-    // Create path element
+    // Create path element (main trash can body with lid and handle)
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', 'm19,6v14a2,2 0,0 1,-2,2H7a2,2 0,0 1,-2,-2V6m3,0V4a2,2 0,0 1,2,-2h4a2,2 0,0 1,2,2v2');
+    path.setAttribute('d', DELETE_ICON_CONFIG.TRASH_CAN_PATH);
     
-    // Create first line element
+    // Create first line element (left deletion indicator)
     const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line1.setAttribute('x1', '10');
-    line1.setAttribute('y1', '11');
-    line1.setAttribute('x2', '10');
-    line1.setAttribute('y2', '17');
+    line1.setAttribute('x1', DELETE_ICON_CONFIG.LEFT_DELETE_LINE.x1);
+    line1.setAttribute('y1', DELETE_ICON_CONFIG.LEFT_DELETE_LINE.y1);
+    line1.setAttribute('x2', DELETE_ICON_CONFIG.LEFT_DELETE_LINE.x2);
+    line1.setAttribute('y2', DELETE_ICON_CONFIG.LEFT_DELETE_LINE.y2);
     
-    // Create second line element
+    // Create second line element (right deletion indicator)
     const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line2.setAttribute('x1', '14');
-    line2.setAttribute('y1', '11');
-    line2.setAttribute('x2', '14');
-    line2.setAttribute('y2', '17');
+    line2.setAttribute('x1', DELETE_ICON_CONFIG.RIGHT_DELETE_LINE.x1);
+    line2.setAttribute('y1', DELETE_ICON_CONFIG.RIGHT_DELETE_LINE.y1);
+    line2.setAttribute('x2', DELETE_ICON_CONFIG.RIGHT_DELETE_LINE.x2);
+    line2.setAttribute('y2', DELETE_ICON_CONFIG.RIGHT_DELETE_LINE.y2);
     
     // Assemble SVG
     svg.appendChild(polyline);
