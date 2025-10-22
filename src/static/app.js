@@ -24,6 +24,101 @@ document.addEventListener("DOMContentLoaded", () => {
     return div.innerHTML;
   }
 
+  // Function to create a participant item element safely
+  function createParticipantElement(participant, activityName) {
+    const participantDiv = document.createElement('div');
+    participantDiv.className = 'participant-item';
+    
+    const emailSpan = document.createElement('span');
+    emailSpan.className = 'participant-email';
+    emailSpan.textContent = participant; // Safe - uses textContent instead of innerHTML
+    
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.title = 'Remove participant';
+    deleteBtn.dataset.activity = activityName; // Safe - direct property assignment
+    deleteBtn.dataset.email = participant; // Safe - direct property assignment
+    
+    // Create SVG icon safely
+    deleteBtn.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="3,6 5,6 21,6"></polyline>
+        <path d="m19,6v14a2,2 0,0 1,-2,2H7a2,2 0,0 1,-2,-2V6m3,0V4a2,2 0,0 1,2,-2h4a2,2 0,0 1,2,2v2"></path>
+        <line x1="10" y1="11" x2="10" y2="17"></line>
+        <line x1="14" y1="11" x2="14" y2="17"></line>
+      </svg>
+    `;
+    
+    participantDiv.appendChild(emailSpan);
+    participantDiv.appendChild(deleteBtn);
+    
+    return participantDiv;
+  }
+
+  // Function to create activity card safely using DOM manipulation
+  function createActivityCard(name, details) {
+    const activityCard = document.createElement("div");
+    activityCard.className = "activity-card";
+
+    const spotsLeft = details.max_participants - details.participants.length;
+
+    // Create title
+    const title = document.createElement('h4');
+    title.textContent = name;
+    
+    // Create description
+    const description = document.createElement('p');
+    description.textContent = details.description;
+    
+    // Create schedule
+    const schedule = document.createElement('p');
+    const scheduleStrong = document.createElement('strong');
+    scheduleStrong.textContent = 'Schedule: ';
+    schedule.appendChild(scheduleStrong);
+    schedule.appendChild(document.createTextNode(details.schedule));
+    
+    // Create availability
+    const availability = document.createElement('p');
+    const availabilityStrong = document.createElement('strong');
+    availabilityStrong.textContent = 'Availability: ';
+    availability.appendChild(availabilityStrong);
+    availability.appendChild(document.createTextNode(`${spotsLeft} spots left`));
+    
+    // Create participants section
+    const participantsSection = document.createElement('div');
+    participantsSection.className = 'participants-section';
+    
+    const participantsTitle = document.createElement('strong');
+    participantsTitle.textContent = 'Current Participants:';
+    participantsSection.appendChild(participantsTitle);
+    
+    if (details.participants.length > 0) {
+      const participantsList = document.createElement('div');
+      participantsList.className = 'participants-list';
+      
+      details.participants.forEach(participant => {
+        const participantElement = createParticipantElement(participant, name);
+        participantsList.appendChild(participantElement);
+      });
+      
+      participantsSection.appendChild(participantsList);
+    } else {
+      const noParticipants = document.createElement('p');
+      noParticipants.className = 'no-participants';
+      noParticipants.textContent = 'No participants yet';
+      participantsSection.appendChild(noParticipants);
+    }
+    
+    // Assemble the card
+    activityCard.appendChild(title);
+    activityCard.appendChild(description);
+    activityCard.appendChild(schedule);
+    activityCard.appendChild(availability);
+    activityCard.appendChild(participantsSection);
+    
+    return activityCard;
+  }
+
   // Function to fetch activities from API
   async function fetchActivities() {
     try {
@@ -37,48 +132,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
-        const activityCard = document.createElement("div");
-        activityCard.className = "activity-card";
-
-        const spotsLeft = details.max_participants - details.participants.length;
-
-        // Create participants list HTML
-        const participantsList = details.participants.length > 0
-          ? `<div class="participants-list">${details.participants.map(participant => 
-              `<div class="participant-item">
-                 <span class="participant-email">${escapeHtml(participant)}</span>
-                 <button class="delete-btn" data-activity="${escapeHtml(name)}" data-email="${escapeHtml(participant)}" title="Remove participant">
-                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                     <polyline points="3,6 5,6 21,6"></polyline>
-                     <path d="m19,6v14a2,2 0,0 1,-2,2H7a2,2 0,0 1,-2,-2V6m3,0V4a2,2 0,0 1,2,-2h4a2,2 0,0 1,2,2v2"></path>
-                     <line x1="10" y1="11" x2="10" y2="17"></line>
-                     <line x1="14" y1="11" x2="14" y2="17"></line>
-                   </svg>
-                 </button>
-               </div>`).join('')}</div>`
-          : '<p class="no-participants">No participants yet</p>';
-
-        activityCard.innerHTML = `
-          <h4>${escapeHtml(name)}</h4>
-          <p>${escapeHtml(details.description)}</p>
-          <p><strong>Schedule:</strong> ${escapeHtml(details.schedule)}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-          <div class="participants-section">
-            <strong>Current Participants:</strong>
-            ${participantsList}
-          </div>
-        `;
-
+        const activityCard = createActivityCard(name, details);
         activitiesList.appendChild(activityCard);
 
         // Add option to select dropdown
         const option = document.createElement("option");
         option.value = name;
-        option.textContent = name;
+        option.textContent = name; // Safe - uses textContent
         activitySelect.appendChild(option);
       });
     } catch (error) {
-      activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
+      const errorMsg = document.createElement("p");
+      errorMsg.textContent = "Failed to load activities. Please try again later.";
+      activitiesList.appendChild(errorMsg);
       console.error("Error fetching activities:", error);
     }
   }
