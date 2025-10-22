@@ -17,11 +17,45 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Helper function to escape HTML characters
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+  // Function to create SVG delete icon safely
+  function createDeleteSvgIcon() {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '16');
+    svg.setAttribute('height', '16');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2');
+    
+    // Create polyline element
+    const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    polyline.setAttribute('points', '3,6 5,6 21,6');
+    
+    // Create path element
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'm19,6v14a2,2 0,0 1,-2,2H7a2,2 0,0 1,-2,-2V6m3,0V4a2,2 0,0 1,2,-2h4a2,2 0,0 1,2,2v2');
+    
+    // Create first line element
+    const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line1.setAttribute('x1', '10');
+    line1.setAttribute('y1', '11');
+    line1.setAttribute('x2', '10');
+    line1.setAttribute('y2', '17');
+    
+    // Create second line element
+    const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line2.setAttribute('x1', '14');
+    line2.setAttribute('y1', '11');
+    line2.setAttribute('x2', '14');
+    line2.setAttribute('y2', '17');
+    
+    // Assemble SVG
+    svg.appendChild(polyline);
+    svg.appendChild(path);
+    svg.appendChild(line1);
+    svg.appendChild(line2);
+    
+    return svg;
   }
 
   // Function to create a participant item element safely
@@ -39,15 +73,9 @@ document.addEventListener("DOMContentLoaded", () => {
     deleteBtn.dataset.activity = activityName; // Safe - direct property assignment
     deleteBtn.dataset.email = participant; // Safe - direct property assignment
     
-    // Create SVG icon safely
-    deleteBtn.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="3,6 5,6 21,6"></polyline>
-        <path d="m19,6v14a2,2 0,0 1,-2,2H7a2,2 0,0 1,-2,-2V6m3,0V4a2,2 0,0 1,2,-2h4a2,2 0,0 1,2,2v2"></path>
-        <line x1="10" y1="11" x2="10" y2="17"></line>
-        <line x1="14" y1="11" x2="14" y2="17"></line>
-      </svg>
-    `;
+    // Create SVG icon safely using DOM manipulation
+    const svgIcon = createDeleteSvgIcon();
+    deleteBtn.appendChild(svgIcon);
     
     participantDiv.appendChild(emailSpan);
     participantDiv.appendChild(deleteBtn);
