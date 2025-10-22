@@ -4,6 +4,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
 
+  // SVG icon constants for the delete button (trash can icon)
+  const DELETE_ICON_CONFIG = {
+    // Top horizontal line of the trash can
+    TOP_LINE_POINTS: '3,6 5,6 21,6',
+    
+    // Main trash can body with lid and handle
+    // Represents: rectangular body with rounded corners, lid on top, and handle indent
+    TRASH_CAN_PATH: 'm19,6v14a2,2 0,0 1,-2,2H7a2,2 0,0 1,-2,-2V6m3,0V4a2,2 0,0 1,2,-2h4a2,2 0,0 1,2,2v2',
+    
+    // Left vertical line inside trash can (deletion indicator)
+    LEFT_DELETE_LINE: { x1: '10', y1: '11', x2: '10', y2: '17' },
+    
+    // Right vertical line inside trash can (deletion indicator)
+    RIGHT_DELETE_LINE: { x1: '14', y1: '11', x2: '14', y2: '17' }
+  };
+
   // Event delegation for delete buttons
   activitiesList.addEventListener("click", async (event) => {
     if (event.target.closest(".delete-btn")) {
@@ -17,11 +33,134 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Helper function to escape HTML characters
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+  // Function to create SVG delete icon safely
+  function createDeleteSvgIcon() {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '16');
+    svg.setAttribute('height', '16');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2');
+    
+    // Create polyline element (top horizontal line of trash can)
+    const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    polyline.setAttribute('points', DELETE_ICON_CONFIG.TOP_LINE_POINTS);
+    
+    // Create path element (main trash can body with lid and handle)
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', DELETE_ICON_CONFIG.TRASH_CAN_PATH);
+    
+    // Create first line element (left deletion indicator)
+    const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line1.setAttribute('x1', DELETE_ICON_CONFIG.LEFT_DELETE_LINE.x1);
+    line1.setAttribute('y1', DELETE_ICON_CONFIG.LEFT_DELETE_LINE.y1);
+    line1.setAttribute('x2', DELETE_ICON_CONFIG.LEFT_DELETE_LINE.x2);
+    line1.setAttribute('y2', DELETE_ICON_CONFIG.LEFT_DELETE_LINE.y2);
+    
+    // Create second line element (right deletion indicator)
+    const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line2.setAttribute('x1', DELETE_ICON_CONFIG.RIGHT_DELETE_LINE.x1);
+    line2.setAttribute('y1', DELETE_ICON_CONFIG.RIGHT_DELETE_LINE.y1);
+    line2.setAttribute('x2', DELETE_ICON_CONFIG.RIGHT_DELETE_LINE.x2);
+    line2.setAttribute('y2', DELETE_ICON_CONFIG.RIGHT_DELETE_LINE.y2);
+    
+    // Assemble SVG
+    svg.appendChild(polyline);
+    svg.appendChild(path);
+    svg.appendChild(line1);
+    svg.appendChild(line2);
+    
+    return svg;
+  }
+
+  // Function to create a participant item element safely
+  function createParticipantElement(participant, activityName) {
+    const participantDiv = document.createElement('div');
+    participantDiv.className = 'participant-item';
+    
+    const emailSpan = document.createElement('span');
+    emailSpan.className = 'participant-email';
+    emailSpan.textContent = participant; // Safe - uses textContent instead of innerHTML
+    
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.title = 'Remove participant';
+    deleteBtn.dataset.activity = activityName; // Safe - direct property assignment
+    deleteBtn.dataset.email = participant; // Safe - direct property assignment
+    
+    // Create SVG icon safely using DOM manipulation
+    const svgIcon = createDeleteSvgIcon();
+    deleteBtn.appendChild(svgIcon);
+    
+    participantDiv.appendChild(emailSpan);
+    participantDiv.appendChild(deleteBtn);
+    
+    return participantDiv;
+  }
+
+  // Function to create activity card safely using DOM manipulation
+  function createActivityCard(name, details) {
+    const activityCard = document.createElement("div");
+    activityCard.className = "activity-card";
+
+    const spotsLeft = details.max_participants - details.participants.length;
+
+    // Create title
+    const title = document.createElement('h4');
+    title.textContent = name;
+    
+    // Create description
+    const description = document.createElement('p');
+    description.textContent = details.description;
+    
+    // Create schedule
+    const schedule = document.createElement('p');
+    const scheduleStrong = document.createElement('strong');
+    scheduleStrong.textContent = 'Schedule: ';
+    schedule.appendChild(scheduleStrong);
+    schedule.appendChild(document.createTextNode(details.schedule));
+    
+    // Create availability
+    const availability = document.createElement('p');
+    const availabilityStrong = document.createElement('strong');
+    availabilityStrong.textContent = 'Availability: ';
+    availability.appendChild(availabilityStrong);
+    availability.appendChild(document.createTextNode(`${spotsLeft} spots left`));
+    
+    // Create participants section
+    const participantsSection = document.createElement('div');
+    participantsSection.className = 'participants-section';
+    
+    const participantsTitle = document.createElement('strong');
+    participantsTitle.textContent = 'Current Participants:';
+    participantsSection.appendChild(participantsTitle);
+    
+    if (details.participants.length > 0) {
+      const participantsList = document.createElement('div');
+      participantsList.className = 'participants-list';
+      
+      details.participants.forEach(participant => {
+        const participantElement = createParticipantElement(participant, name);
+        participantsList.appendChild(participantElement);
+      });
+      
+      participantsSection.appendChild(participantsList);
+    } else {
+      const noParticipants = document.createElement('p');
+      noParticipants.className = 'no-participants';
+      noParticipants.textContent = 'No participants yet';
+      participantsSection.appendChild(noParticipants);
+    }
+    
+    // Assemble the card
+    activityCard.appendChild(title);
+    activityCard.appendChild(description);
+    activityCard.appendChild(schedule);
+    activityCard.appendChild(availability);
+    activityCard.appendChild(participantsSection);
+    
+    return activityCard;
   }
 
   // Function to fetch activities from API
@@ -37,48 +176,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
-        const activityCard = document.createElement("div");
-        activityCard.className = "activity-card";
-
-        const spotsLeft = details.max_participants - details.participants.length;
-
-        // Create participants list HTML
-        const participantsList = details.participants.length > 0
-          ? `<div class="participants-list">${details.participants.map(participant => 
-              `<div class="participant-item">
-                 <span class="participant-email">${escapeHtml(participant)}</span>
-                 <button class="delete-btn" data-activity="${escapeHtml(name)}" data-email="${escapeHtml(participant)}" title="Remove participant">
-                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                     <polyline points="3,6 5,6 21,6"></polyline>
-                     <path d="m19,6v14a2,2 0,0 1,-2,2H7a2,2 0,0 1,-2,-2V6m3,0V4a2,2 0,0 1,2,-2h4a2,2 0,0 1,2,2v2"></path>
-                     <line x1="10" y1="11" x2="10" y2="17"></line>
-                     <line x1="14" y1="11" x2="14" y2="17"></line>
-                   </svg>
-                 </button>
-               </div>`).join('')}</div>`
-          : '<p class="no-participants">No participants yet</p>';
-
-        activityCard.innerHTML = `
-          <h4>${escapeHtml(name)}</h4>
-          <p>${escapeHtml(details.description)}</p>
-          <p><strong>Schedule:</strong> ${escapeHtml(details.schedule)}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-          <div class="participants-section">
-            <strong>Current Participants:</strong>
-            ${participantsList}
-          </div>
-        `;
-
+        const activityCard = createActivityCard(name, details);
         activitiesList.appendChild(activityCard);
 
         // Add option to select dropdown
         const option = document.createElement("option");
         option.value = name;
-        option.textContent = name;
+        option.textContent = name; // Safe - uses textContent
         activitySelect.appendChild(option);
       });
     } catch (error) {
-      activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
+      const errorMsg = document.createElement("p");
+      errorMsg.textContent = "Failed to load activities. Please try again later.";
+      activitiesList.appendChild(errorMsg);
       console.error("Error fetching activities:", error);
     }
   }
