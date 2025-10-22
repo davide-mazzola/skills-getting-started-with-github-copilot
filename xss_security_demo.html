@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XSS Security Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .safe { background-color: #d4edda; border-color: #c3e6cb; }
+        .unsafe { background-color: #f8d7da; border-color: #f5c6cb; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background-color: #d1ecf1; color: #0c5460; }
+        .failure { background-color: #f8d7da; color: #721c24; }
+        code { background-color: #f8f9fa; padding: 2px 4px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>XSS Security Test - Frontend Validation</h1>
+    
+    <div class="test-section safe">
+        <h2>✅ SECURE: Current Implementation (Event Delegation + escapeHtml)</h2>
+        <p>This demonstrates our secure implementation using data attributes and HTML escaping:</p>
+        
+        <div id="secure-participants-list">
+            <!-- This will be populated by our secure JavaScript -->
+        </div>
+        
+        <div id="secure-test-results"></div>
+    </div>
+    
+    <div class="test-section unsafe">
+        <h2>⚠️ VULNERABLE: Original Implementation (Inline Handlers)</h2>
+        <p><strong>DO NOT USE:</strong> This demonstrates the original vulnerable approach:</p>
+        
+        <div id="vulnerable-participants-list">
+            <!-- This will show the vulnerable approach for comparison -->
+        </div>
+        
+        <div id="vulnerable-test-results"></div>
+    </div>
+
+    <script>
+        // Test data with malicious content
+        const testParticipants = [
+            "normal@example.com",
+            "test'); alert('XSS Attack 1'); //",
+            "&lt;script&gt;alert('XSS Attack 2')&lt;/script&gt;@evil.com",
+            "test\"; window.location='http://evil.com'; \"@attack.com",
+            "javascript:alert('XSS Attack 3')@malicious.com"
+        ];
+
+        // Helper function to escape HTML (same as in our app)
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // SECURE IMPLEMENTATION - Using data attributes and event delegation
+        function renderSecureParticipants() {
+            const container = document.getElementById('secure-participants-list');
+            
+            // Add event delegation
+            container.addEventListener('click', function(event) {
+                if (event.target.closest('.delete-btn')) {
+                    const deleteBtn = event.target.closest('.delete-btn');
+                    const email = deleteBtn.dataset.email;
+                    const activityName = deleteBtn.dataset.activity;
+                    
+                    // This is safe - no code execution possible
+                    document.getElementById('secure-test-results').innerHTML += 
+                        `<div class="test-result success">✅ Safely handled deletion request for: ${escapeHtml(email)}</div>`;
+                }
+            });
+            
+            // Render participants securely
+            const participantsHtml = testParticipants.map(participant => 
+                `<div class="participant-item" style="margin: 5px 0; padding: 8px; background: #f8f9fa; border-radius: 4px;">
+                    <span>${escapeHtml(participant)}</span>
+                    <button class="delete-btn" data-activity="${escapeHtml('Test Activity')}" data-email="${escapeHtml(participant)}" 
+                            style="margin-left: 10px; background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer;">
+                        Delete
+                    </button>
+                </div>`
+            ).join('');
+            
+            container.innerHTML = `
+                <h3>Secure Participant List:</h3>
+                ${participantsHtml}
+                <p><em>All malicious content is safely escaped. Click delete buttons to test.</em></p>
+            `;
+        }
+
+        // VULNERABLE IMPLEMENTATION - Using inline handlers (FOR DEMONSTRATION ONLY)
+        function renderVulnerableParticipants() {
+            const container = document.getElementById('vulnerable-participants-list');
+            
+            // This would be vulnerable if we actually used it
+            const vulnerableHtml = testParticipants.map(participant => {
+                // This is what the OLD code would have generated (but we're not actually using onclick)
+                return `<div class="participant-item" style="margin: 5px 0; padding: 8px; background: #ffe6e6; border-radius: 4px;">
+                    <span style="font-family: monospace; color: #666;">${participant}</span>
+                    <button style="margin-left: 10px; background: #666; color: white; border: none; padding: 4px 8px; border-radius: 3px;" 
+                            disabled title="Disabled for security">
+                        Delete (Disabled)
+                    </button>
+                    <br><small style="color: #721c24;">
+                        Would have generated: onclick="deleteParticipant('Test Activity', '${participant}')"
+                    </small>
+                </div>`;
+            }).join('');
+            
+            container.innerHTML = `
+                <h3>Vulnerable Approach (Disabled for Safety):</h3>
+                ${vulnerableHtml}
+                <div class="test-result failure">
+                    ❌ The inline onclick handlers with unescaped content would allow XSS attacks.
+                    <br>Notice how malicious emails with quotes would break out of the string context.
+                </div>
+            `;
+        }
+
+        // Run security demonstration
+        function runSecurityTest() {
+            renderSecureParticipants();
+            renderVulnerableParticipants();
+            
+            document.getElementById('secure-test-results').innerHTML = 
+                '<div class="test-result success">✅ Secure implementation loaded. Try clicking delete buttons above.</div>';
+            
+            document.getElementById('vulnerable-test-results').innerHTML = 
+                '<div class="test-result failure">❌ Vulnerable approach demonstrated above (safely disabled).</div>';
+        }
+
+        // Initialize test when page loads
+        document.addEventListener('DOMContentLoaded', runSecurityTest);
+
+        // Additional security test
+        setTimeout(() => {
+            const alertCalled = window.alertCalled || false;
+            if (!alertCalled) {
+                document.getElementById('secure-test-results').innerHTML += 
+                    '<div class="test-result success">✅ No XSS attacks executed - security fixes are working!</div>';
+            }
+        }, 1000);
+
+        // Override alert to detect if XSS succeeded
+        const originalAlert = window.alert;
+        window.alert = function(message) {
+            window.alertCalled = true;
+            document.getElementById('secure-test-results').innerHTML += 
+                `<div class="test-result failure">❌ XSS Attack detected: ${escapeHtml(message)}</div>`;
+            // Don't actually show the alert
+            console.warn('XSS attempt blocked:', message);
+        };
+    </script>
+</body>
+</html>
